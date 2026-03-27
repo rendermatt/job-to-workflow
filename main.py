@@ -12,7 +12,7 @@ No complex business logic - just simple number operations to show the patterns c
 
 import logging
 
-#from render_sdk import Workflows
+from render_sdk import Workflows
 
 # Configure logging to see what's happening
 logging.basicConfig(
@@ -22,14 +22,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Initialize Workflows app
-#app = Workflows()
+app = Workflows()
 
 
 # ============================================================================
 # BASIC TASK - The building block
 # ============================================================================
 
-#@app.task
+@app.task
 def double(x: int) -> int:
     """
     A basic task that doubles a number.
@@ -53,7 +53,7 @@ def double(x: int) -> int:
 # SUBTASK CALLING - Tasks calling other tasks
 # ============================================================================
 
-#@app.task
+@app.task
 async def add_doubled_numbers(*args: int) -> dict:
     """
     Demonstrates calling a task as a subtask.
@@ -103,7 +103,7 @@ async def add_doubled_numbers(*args: int) -> dict:
 # SUBTASK IN A LOOP - Processing multiple items
 # ============================================================================
 
-#@app.task
+@app.task
 async def process_numbers(*numbers: int) -> dict:
     """
     Demonstrates calling a subtask in a loop.
@@ -148,7 +148,7 @@ async def process_numbers(*numbers: int) -> dict:
 # MULTI-STEP WORKFLOW - Chaining multiple subtasks
 # ============================================================================
 
-#@app.task
+@app.task
 async def calculate_and_process(a: int, b: int, *more_numbers: int) -> dict:
     """
     Demonstrates a multi-step workflow that chains multiple subtasks.
@@ -193,5 +193,4 @@ async def calculate_and_process(a: int, b: int, *more_numbers: int) -> dict:
 
 
 if __name__ == "__main__":
-    #app.start()
-    await calculate_and_process(2,3)
+    app.start()
