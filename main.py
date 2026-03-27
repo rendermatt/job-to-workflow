@@ -12,7 +12,6 @@ No complex business logic - just simple number operations to show the patterns c
 
 import logging
 
-from render_sdk import Workflows
 
 # Configure logging to see what's happening
 logging.basicConfig(
@@ -21,15 +20,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize Workflows app
-app = Workflows()
-
 
 # ============================================================================
 # BASIC TASK - The building block
 # ============================================================================
 
-@app.task
 def double(x: int) -> int:
     """
     A basic task that doubles a number.
@@ -53,8 +48,7 @@ def double(x: int) -> int:
 # SUBTASK CALLING - Tasks calling other tasks
 # ============================================================================
 
-@app.task
-async def add_doubled_numbers(*args: int) -> dict:
+def add_doubled_numbers(*args: int) -> dict:
     """
     Demonstrates calling a task as a subtask.
 
@@ -79,11 +73,11 @@ async def add_doubled_numbers(*args: int) -> dict:
     # SUBTASK CALL #1: Call 'double' as a subtask
     # The 'await' keyword tells Render to execute this as a subtask
     logger.info(f"[WORKFLOW] Calling subtask: double({a})")
-    doubled_a = await double(a)
+    doubled_a = double(a)
 
     # SUBTASK CALL #2: Call 'double' as a subtask again
     logger.info(f"[WORKFLOW] Calling subtask: double({b})")
-    doubled_b = await double(b)
+    doubled_b = double(b)
 
     # Now we have the results from both subtasks, let's combine them
     total = doubled_a + doubled_b
@@ -103,8 +97,7 @@ async def add_doubled_numbers(*args: int) -> dict:
 # SUBTASK IN A LOOP - Processing multiple items
 # ============================================================================
 
-@app.task
-async def process_numbers(*numbers: int) -> dict:
+def process_numbers(*numbers: int) -> dict:
     """
     Demonstrates calling a subtask in a loop.
 
@@ -130,7 +123,7 @@ async def process_numbers(*numbers: int) -> dict:
         logger.info(f"[WORKFLOW] Processing item {i}/{len(numbers_list)}: {num}")
 
         # SUBTASK CALL: Call 'double' as a subtask for each number
-        doubled = await double(num)
+        doubled = double(num)
         doubled_results.append(doubled)
 
     result = {
@@ -148,8 +141,7 @@ async def process_numbers(*numbers: int) -> dict:
 # MULTI-STEP WORKFLOW - Chaining multiple subtasks
 # ============================================================================
 
-@app.task
-async def calculate_and_process(a: int, b: int, *more_numbers: int) -> dict:
+def calculate_and_process(a: int, b: int, *more_numbers: int) -> dict:
     """
     Demonstrates a multi-step workflow that chains multiple subtasks.
 
@@ -173,11 +165,11 @@ async def calculate_and_process(a: int, b: int, *more_numbers: int) -> dict:
 
     # STEP 1: Add two doubled numbers
     logger.info("[WORKFLOW] Step 1: Adding doubled numbers")
-    step1_result = await add_doubled_numbers(a, b)
+    step1_result = add_doubled_numbers(a, b)
 
     # STEP 2: Process a list of numbers
     logger.info("[WORKFLOW] Step 2: Processing number list")
-    step2_result = await process_numbers(*more_numbers_list)
+    step2_result = process_numbers(*more_numbers_list)
 
     # STEP 3: Combine the results
     logger.info("[WORKFLOW] Step 3: Combining results")
@@ -193,4 +185,7 @@ async def calculate_and_process(a: int, b: int, *more_numbers: int) -> dict:
 
 
 if __name__ == "__main__":
-    app.start()
+    import sys
+    numbers = [int(x) for x in sys.argv[1:]]
+    result = calculate_and_process(*numbers)
+    logger.info(f"Result: {result}")
