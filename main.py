@@ -12,6 +12,7 @@ No complex business logic - just simple number operations to show the patterns c
 
 import logging
 
+from render_sdk import Workflows
 
 # Configure logging to see what's happening
 logging.basicConfig(
@@ -19,6 +20,9 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Initialize Workflows app
+app = Workflows()
 
 
 # ============================================================================
@@ -141,6 +145,7 @@ def process_numbers(*numbers: int) -> dict:
 # MULTI-STEP WORKFLOW - Chaining multiple subtasks
 # ============================================================================
 
+@app.task
 def calculate_and_process(a: int, b: int, *more_numbers: int) -> dict:
     """
     Demonstrates a multi-step workflow that chains multiple subtasks.
@@ -185,7 +190,4 @@ def calculate_and_process(a: int, b: int, *more_numbers: int) -> dict:
 
 
 if __name__ == "__main__":
-    import sys
-    numbers = [int(x) for x in sys.argv[1:]]
-    result = calculate_and_process(*numbers)
-    logger.info(f"Result: {result}")
+    app.start()
