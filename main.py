@@ -10,7 +10,9 @@ It demonstrates:
 No complex business logic - just simple number operations to show the patterns clearly.
 """
 
+import asyncio
 import logging
+import time
 
 from render_sdk import Workflows
 
@@ -44,6 +46,7 @@ def double(x: int) -> int:
         The doubled number
     """
     logger.info(f"[TASK] Doubling {x}")
+    time.sleep(3)
     result = x * 2
     logger.info(f"[TASK] Result: {result}")
     return result
@@ -75,6 +78,7 @@ async def add_doubled_numbers(*args: int) -> dict:
     
     a, b = args
     logger.info(f"[WORKFLOW] Starting: add_doubled_numbers({a}, {b})")
+    await asyncio.sleep(3)
 
     # SUBTASK CALL #1: Call 'double' as a subtask
     # The 'await' keyword tells Render to execute this as a subtask
@@ -120,8 +124,9 @@ async def process_numbers(*numbers: int) -> dict:
         Dictionary with original numbers and their doubled values
     """
     numbers_list = list(numbers)
-    
+
     logger.info(f"[WORKFLOW] Starting: process_numbers({numbers_list})")
+    await asyncio.sleep(3)
 
     doubled_results = []
 
