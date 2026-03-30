@@ -37,6 +37,22 @@ class Handler(BaseHTTPRequestHandler):
         )
         logger.info("task started run_id=%s", started.id)
 
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.send_header("Transfer-Encoding", "chunked")
+        self.end_headers()
+
+        def send_event(event, data):
+            # SSE supports multi-line data via repeated "data:" prefixes
+            data_lines = "\n".join(f"data: {line}" for line in data.splitlines())
+            msg = f"event: {event}\n{data_lines}\n\n"
+            encoded = msg.encode()
+            self.wfile.write(f"{len(encoded):x}\r\n".encode())
+            self.wfile.write(encoded)
+            self.wfile.write(b"\r\n")
+            self.wfile.flush()
+
         last_status = None
         while True:
             details = render_client.workflows.get_task_run(started.id)
@@ -44,18 +60,20 @@ class Handler(BaseHTTPRequestHandler):
             if status != last_status:
                 logger.info("poll run_id=%s status=%s", started.id, status)
                 last_status = status
+                send_event("status", status)
             if status in ("completed", "failed", "canceled"):
                 break
             time.sleep(POLL_INTERVAL)
 
-        logger.info("task done run_id=%s results=%s", started.id, details.results)
+        if details.error:
+            logger.info("task error run_id=%s error=%s", started.id, details.error)
+            send_event("error", details.error)
+        else:
+            logger.info("task done run_id=%s results=%s", started.id, details.results)
+            send_event("result", json.dumps(to_jsonable(details), indent=2, default=str))
 
-        body = json.dumps(to_jsonable(details), indent=2, default=str).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
+        self.wfile.write(b"0\r\n\r\n")
+        self.wfile.flush()
 
 
 if __name__ == "__main__":
