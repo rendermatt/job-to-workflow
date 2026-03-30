@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import time
@@ -15,7 +16,17 @@ POLL_INTERVAL = float(os.environ.get("POLL_INTERVAL", "2"))
 render_client = Render()
 
 
+def to_jsonable(obj):
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    if hasattr(obj, "__dict__"):
+        return vars(obj)
+    return str(obj)
+
+
 class Handler(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+
     def do_GET(self):
         digits = [int(c) for c in self.path if c.isdigit()]
         logger.info("request path=%s digits=%s", self.path, digits)
@@ -26,43 +37,25 @@ class Handler(BaseHTTPRequestHandler):
         )
         logger.info("task started run_id=%s", started.id)
 
-        self.send_response(200)
-        self.send_header("Content-Type", "text/event-stream")
-        self.send_header("Cache-Control", "no-cache")
-        self.send_header("Transfer-Encoding", "chunked")
-        self.end_headers()
-
-        def send_event(event, data):
-            msg = f"event: {event}\ndata: {data}\n\n"
-            encoded = msg.encode()
-            self.wfile.write(f"{len(encoded):x}\r\n".encode())
-            self.wfile.write(encoded)
-            self.wfile.write(b"\r\n")
-            self.wfile.flush()
-
         last_status = None
         while True:
             details = render_client.workflows.get_task_run(started.id)
             status = details.status
-            logger.info("poll run_id=%s status=%s", started.id, status)
-
             if status != last_status:
+                logger.info("poll run_id=%s status=%s", started.id, status)
                 last_status = status
-                send_event("status", status)
-
             if status in ("completed", "failed", "canceled"):
-                if details.error:
-                    logger.info("task error run_id=%s error=%s", started.id, details.error)
-                    send_event("error", details.error)
-                else:
-                    logger.info("task done run_id=%s results=%s", started.id, details.results)
-                    send_event("result", str(details.results))
                 break
-
             time.sleep(POLL_INTERVAL)
 
-        self.wfile.write(b"0\r\n\r\n")
-        self.wfile.flush()
+        logger.info("task done run_id=%s results=%s", started.id, details.results)
+
+        body = json.dumps(to_jsonable(details), indent=2, default=str).encode()
+        self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
 
 
 if __name__ == "__main__":
