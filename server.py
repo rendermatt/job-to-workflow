@@ -3,10 +3,10 @@ import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from render_sdk import Render
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s %(message)s",
-)
+_handler = logging.StreamHandler()
+_handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
+logging.basicConfig(level=logging.INFO, handlers=[_handler], force=True)
+logging.root.handlers[0].stream.reconfigure(line_buffering=True)
 logger = logging.getLogger(__name__)
 
 WORKFLOW_SLUG = os.environ.get("WORKFLOW_SLUG", "job-to-workflow")
