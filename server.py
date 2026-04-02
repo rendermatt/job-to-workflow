@@ -2,6 +2,7 @@ import json
 import logging
 import os
 import time
+from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from render_sdk import Render
 
@@ -53,14 +54,12 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(b"\r\n")
             self.wfile.flush()
 
-        last_status = None
         while True:
             details = render_client.workflows.get_task_run(started.id)
             status = details.status
-            if status != last_status:
-                logger.info("poll run_id=%s status=%s", started.id, status)
-                last_status = status
-                send_event("status", status)
+            ts = datetime.now().strftime("%H:%M:%S")
+            logger.info("poll run_id=%s status=%s", started.id, status)
+            send_event("status", f"[{ts}] {status}")
             if status in ("completed", "failed", "canceled"):
                 break
             time.sleep(POLL_INTERVAL)
